@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: ./polybot
+    ports:
+      - "843:8443"
+    volumes:
+      - ./polybot:/app
+
+  web:
+    build:
+      context: ./nginx
+    ports:
+      - "844:8444"
