@@ -9,7 +9,7 @@ pipeline {
     }
 
     environment {
-        APP_IMAGE_NAME = 'app-image'
+        APP_IMAGE_NAME ='app-image'
         WEB_IMAGE_NAME = 'web-image'
         DOCKER_COMPOSE_FILE = 'compose.yaml'
         DOCKER_REPO = 'ronn4/repo1'
@@ -18,7 +18,7 @@ pipeline {
         NEXUS_URL = "172.20.30.109:8085"
         NEXUS_CREDENTIALS_ID = 'NEXUS_CREDENTIALS_ID'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
-        SNYK_API_TOKEN = 'Snyk_Token'
+        SNYK_API_TOKEN = 'SNYK_API_TOKEN'
     }
 
     stages {
