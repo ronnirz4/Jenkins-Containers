@@ -17,12 +17,12 @@ pipeline {
         WEB_IMAGE_NAME = 'web-image'
         DOCKER_COMPOSE_FILE = 'compose.yaml'
         DOCKER_REPO = 'ronn4/repo1'
-        NEXUS_REPO = "dockernexus"
+        NEXUS_REPO = "Nexus"
         NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "172.30.134.43:8085"
+        NEXUS_URL = "172.20.30.109:8085"
         NEXUS_CREDENTIALS_ID = 'NEXUS_CREDENTIALS_ID'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
-        SNYK_API_TOKEN = 'SNYK_API_TOKEN'
+        SNYK_API_TOKEN = 'Snyk_Token'
     }
 
     stages {
@@ -76,8 +76,8 @@ pipeline {
                     withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
                         // Scan the image
                         bat """
-                            snyk auth $SNYK_TOKEN
-                            snyk container test {APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
+                            snyk auth ${SNYK_TOKEN}
+                            snyk container test ${APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
                         """
                     }
                 }
@@ -122,7 +122,7 @@ pipeline {
                 script {
                     sshagent(['ec2-ssh-credentials']) {
                         bat """
-                            ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-153-49-180.eu-central-1.compute.amazonaws.com '
+                            ssh -o StrictHostKeyChecking=no ec2-user@ec2-3-72-58-99.eu-central-1.compute.amazonaws.com '
                                 docker pull ronn4/repo1-app:latest
                                 docker stop mypolybot-app || true
                                 docker rm mypolybot-app || true
