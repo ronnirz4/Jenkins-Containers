@@ -3,16 +3,12 @@
 pipeline {
     agent any
     options {
-        // Keeps builds for the last 30 days.
         buildDiscarder(logRotator(daysToKeepStr: '30'))
-        // Prevents concurrent builds of the same pipeline.
         disableConcurrentBuilds()
-        // Adds timestamps to the log output.
         timestamps()
     }
 
     environment {
-        // Define environment variables
         APP_IMAGE_NAME = 'app-image'
         WEB_IMAGE_NAME = 'web-image'
         DOCKER_COMPOSE_FILE = 'compose.yaml'
@@ -28,23 +24,31 @@ pipeline {
     stages {
         stage('Use Shared Library Code') {
             steps {
-                // Use the helloWorld function from the shared library
+                echo 'Using Shared Library Code Stage...'
                 helloWorld('DevOps Student')
+                echo 'Completed Shared Library Code Stage'
             }
         }
         stage('Checkout and Extract Git Commit Hash') {
             steps {
-                // Checkout code
+                echo 'Starting Checkout Stage...'
                 checkout scm
+                echo 'Completed Checkout Stage'
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image using docker-compose
-                    bat """
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} build
-                    """
+                    echo 'Starting Docker Build Stage...'
+                    try {
+                        bat """
+                            docker-compose -f ${DOCKER_COMPOSE_FILE} build
+                        """
+                        echo 'Docker Build Stage Completed'
+                    } catch (Exception e) {
+                        echo "Error in Docker Build Stage: ${e}"
+                        throw e
+                    }
                 }
             }
         }
@@ -52,20 +56,25 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'NEXUS_CREDENTIALS_ID', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     script {
-                        // Extract Git commit hash
-                        bat(script: 'git rev-parse --short HEAD > gitCommit.txt')
-                        def GITCOMMIT = readFile('gitCommit.txt').trim()
-                        def GIT_TAG = "${GITCOMMIT}"
-                        def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GIT_TAG}"
-                        // Login to Dockerhub / Nexus repo and tag + push the images
-                        bat """
-                            cd polybot
-                            docker login -u ${USER} -p ${PASS} ${NEXUS_PROTOCOL}://${NEXUS_URL}/repository/${NEXUS_REPO}
-                            docker tag ${APP_IMAGE_NAME}:latest ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
-                            docker tag ${WEB_IMAGE_NAME}:latest ${NEXUS_URL}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
-                            docker push ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
-                            docker push ${NEXUS_URL}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
-                        """
+                        echo 'Starting Login, Tag, and Push Images Stage...'
+                        try {
+                            bat(script: 'git rev-parse --short HEAD > gitCommit.txt')
+                            def GITCOMMIT = readFile('gitCommit.txt').trim()
+                            def GIT_TAG = "${GITCOMMIT}"
+                            def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GIT_TAG}"
+                            bat """
+                                cd polybot
+                                docker login -u ${USER} -p ${PASS} ${NEXUS_PROTOCOL}://${NEXUS_URL}/repository/${NEXUS_REPO}
+                                docker tag ${APP_IMAGE_NAME}:latest ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
+                                docker tag ${WEB_IMAGE_NAME}:latest ${NEXUS_URL}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${NEXUS_URL}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
+                            """
+                            echo 'Login, Tag, and Push Images Stage Completed'
+                        } catch (Exception e) {
+                            echo "Error in Login, Tag, and Push Images Stage: ${e}"
+                            throw e
+                        }
                     }
                 }
             }
@@ -73,12 +82,18 @@ pipeline {
         stage('Security Vulnerability Scanning') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
-                        // Scan the image
-                        bat """
-                            snyk auth ${SNYK_TOKEN}
-                            snyk container test ${APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
-                        """
+                    echo 'Starting Security Vulnerability Scanning Stage...'
+                    try {
+                        withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
+                            bat """
+                                snyk auth ${SNYK_TOKEN}
+                                snyk container test ${APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
+                            """
+                        }
+                        echo 'Security Vulnerability Scanning Stage Completed'
+                    } catch (Exception e) {
+                        echo "Error in Security Vulnerability Scanning Stage: ${e}"
+                        throw e
                     }
                 }
             }
@@ -86,11 +101,17 @@ pipeline {
         stage('Install Python Requirements') {
             steps {
                 script {
-                // Install Python dependencies
-                bat """
-                    pip install --upgrade pip
-                    pip install pytest unittest2 pylint flask telebot Pillow loguru matplotlib scikit-learn
-                """
+                    echo 'Starting Install Python Requirements Stage...'
+                    try {
+                        bat """
+                            pip install --upgrade pip
+                            pip install pytest unittest2 pylint flask telebot Pillow loguru matplotlib scikit-learn
+                        """
+                        echo 'Install Python Requirements Stage Completed'
+                    } catch (Exception e) {
+                        echo "Error in Install Python Requirements Stage: ${e}"
+                        throw e
+                    }
                 }
             }
         }
@@ -99,19 +120,31 @@ pipeline {
                 stage('Static code linting') {
                     steps {
                         script {
-                            // Run python code analysis
-                            bat """
-                                python -m pylint -f parseable --reports=no polybot/*.py > pylint.log
-                                type pylint.log
-                            """
+                            echo 'Starting Static Code Linting Stage...'
+                            try {
+                                bat """
+                                    python -m pylint -f parseable --reports=no polybot/*.py > pylint.log
+                                    type pylint.log
+                                """
+                                echo 'Static Code Linting Stage Completed'
+                            } catch (Exception e) {
+                                echo "Error in Static Code Linting Stage: ${e}"
+                                throw e
+                            }
                         }
                     }
                 }
                 stage('Unittest') {
                     steps {
                         script {
-                            // Run unittests
-                            bat 'python -m pytest --junitxml results.xml polybot/test'
+                            echo 'Starting Unittest Stage...'
+                            try {
+                                bat 'python -m pytest --junitxml results.xml polybot/test'
+                                echo 'Unittest Stage Completed'
+                            } catch (Exception e) {
+                                echo "Error in Unittest Stage: ${e}"
+                                throw e
+                            }
                         }
                     }
                 }
@@ -120,15 +153,22 @@ pipeline {
         stage('Deployment to EC2') {
             steps {
                 script {
-                    sshagent(['ec2-ssh-credentials']) {
-                        bat """
-                            ssh -o StrictHostKeyChecking=no ec2-user@ec2-3-72-58-99.eu-central-1.compute.amazonaws.com '
-                                docker pull ronn4/repo1:app
-                                docker stop app || true
-                                docker rm app || true
-                                docker run -d --name mypolybot-app -p 80:80 ronn4/repo1-app:latest
-                            '
-                        """
+                    echo 'Starting Deployment to EC2 Stage...'
+                    try {
+                        sshagent(['ec2-ssh-credentials']) {
+                            bat """
+                                ssh -o StrictHostKeyChecking=no ec2-user@ec2-3-72-58-99.eu-central-1.compute.amazonaws.com '
+                                    docker pull ronn4/repo1:app
+                                    docker stop app || true
+                                    docker rm app || true
+                                    docker run -d --name mypolybot-app -p 80:80 ronn4/repo1-app:latest
+                                '
+                            """
+                        }
+                        echo 'Deployment to EC2 Stage Completed'
+                    } catch (Exception e) {
+                        echo "Error in Deployment to EC2 Stage: ${e}"
+                        throw e
                     }
                 }
             }
@@ -137,22 +177,15 @@ pipeline {
     post {
         always {
             script {
-                // Process the test results using the JUnit plugin
+                echo 'Running post actions...'
                 junit 'results.xml'
-
-                // Process the pylint report using the Warnings Plugin
                 recordIssues enabledForFailure: true, aggregatingResults: true
                 recordIssues tools: [pyLint(pattern: 'pylint.log')]
-
-                // Clean up workspace after build
-                cleanWs(cleanWhenNotBuilt: false,
-                        deleteDirs: true,
-                        notFailBuild: true)
-
-                // Clean up unused dangling Docker images
+                cleanWs(cleanWhenNotBuilt: false, deleteDirs: true, notFailBuild: true)
                 bat """
                     docker image prune -f
                 """
+                echo 'Post actions completed'
             }
         }
     }
