@@ -1,2 +1,6 @@
-flask
-scikit-learn
+flask~=3.0.3
+scikit-learn~=1.5.1
+numpy~=2.0.0
+telebot~=0.0.5
+loguru~=0.7.2
+pillow~=10.4.0

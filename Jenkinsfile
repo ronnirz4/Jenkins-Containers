@@ -89,7 +89,7 @@ pipeline {
                 // Install Python dependencies
                 bat """
                     pip install --upgrade pip
-                    pip install pytest unittest2 pylint flask telebot Pillow loguru matplotlib
+                    pip install pytest unittest2 pylint flask telebot Pillow loguru matplotlib scikit-learn
                 """
                 }
             }
@@ -123,9 +123,9 @@ pipeline {
                     sshagent(['ec2-ssh-credentials']) {
                         bat """
                             ssh -o StrictHostKeyChecking=no ec2-user@ec2-3-72-58-99.eu-central-1.compute.amazonaws.com '
-                                docker pull ronn4/repo1-app:latest
-                                docker stop mypolybot-app || true
-                                docker rm mypolybot-app || true
+                                docker pull ronn4/repo1:app
+                                docker stop app || true
+                                docker rm app || true
                                 docker run -d --name mypolybot-app -p 80:80 ronn4/repo1-app:latest
                             '
                         """
